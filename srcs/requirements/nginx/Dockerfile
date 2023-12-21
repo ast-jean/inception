@@ -1,24 +1,22 @@
+#---------- NGINX ----------
+
 FROM	debian:buster
 
-#install all the program
-RUN		apt-get update
-RUN		apt-get install -y nginx \
-                openssl
+RUN	    apt update -y && \
+	    apt upgrade -y && \
+	    apt-get install -y nginx \
+        openssl && \
+        mkdir -p /etc/nginx/ssl && \
+        mkdir -p /run/nginx && \
+        chown -R www-data /var/lib/nginx && \
+        rm -rf /etc/nginx/sites-available/default
 
-# nginx SSL
-RUN mkdir /etc/nginx/ssl
-RUN openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes \
-       -out /etc/nginx/ssl/ast-jean.crt \
-       -keyout /etc/nginx/ssl/ast-jean.key \
-       -subj "/C=CA/ST=QC/L=QC/O=42 School/OU=ast-jean/CN=ast-jean/"
+COPY    ./conf/default.conf /etc/nginx/sites-available/default.conf
+COPY    ./conf/nginx.conf /etc/nginx/nginx.conf
+COPY    ./tools/run.sh /tmp/run.sh
 
-COPY ./conf/nginx.conf /etc/nginx/conf.d
+RUN     ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
 
-# nginx config
-RUN mkdir -p /run/nginx
-
-#the only port allowed
 EXPOSE	443
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT [ "sh", "/tmp/run.sh" ]

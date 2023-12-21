@@ -1,0 +1,13 @@
+#!/bin/bash
+echo "Initializing MariaDB Database"
+/etc/init.d/mysql start -uroot -p1234
+sleep 3
+echo "Connecting to mariadb"
+
+mysql -u root -p1234 <<-EOSQL
+    CREATE DATABASE IF NOT EXISTS my_custom_db;
+    GRANT ALL ON my_custom_db.* TO 'my_user'@'%' IDENTIFIED BY 'my_password';
+    FLUSH PRIVILEGES;
+EOSQL
+
+exec "$@"

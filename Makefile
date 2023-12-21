@@ -1,56 +1,64 @@
-all:
-	@sudo systemctl stop apache2 #free port 80
-	@docker-compose -f ./srcs/docker-compose.yml up -d --build
+NAME=inception
+DOCKER_PATH=/usr/local/bin/docker-compose
 
-copy-html:
-	sudo cp ./srcs/requirements/wordpress/conf/index.php /var/www/html/index.php 
+all: create_vol build up
+
+host:
+	sudo sed -i 's|localhost|ast-jean.42.fr|g' /etc/hosts
+
+#install:
+##	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+#	sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+#	sudo chown $(USER) $(DOCKER_PATH)
+#	sudo chmod 777 $(DOCKER_PATH)
+
+build:
+	docker-compose -f ./srcs/docker-compose.yml build
+
+rm_vol:
+	sudo chown -R $(USER) $(HOME)/data
+	sudo chmod -R 777 $(HOME)/data
+	rm -rf $(HOME)/data
+
+create_vol:
+	mkdir -p $(HOME)/data/mysql
+	mkdir -p $(HOME)/data/html
+	sudo chown -R $(USER) $(HOME)/data
+	sudo chmod -R 777 $(HOME)/data
+
+up:
+	sudo systemctl stop nginx
+	docker-compose -f ./srcs/docker-compose.yml up -d
+
+start:
+	docker-compose -f ./srcs/docker-compose.yml start
 
 down:
-	@docker-compose -f ./srcs/docker-compose.yml down
+	docker-compose -f ./srcs/docker-compose.yml down
 
-re: down copy-html all
+remove:
+	sudo chown -R $(USER) $(HOME)/data
+	sudo chmod -R 777 $(HOME)/data
+	rm -rf $(HOME)/data
+	docker volume prune -f
+	docker volume rm srcs_wordpress
+	docker volume rm srcs_mariadb
+	docker container prune -f
 
-status:
-	@sudo docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
+re: remove delete build up
 
-clean:
-	docker stop $$(docker ps -qa);\
-	docker rm $$(docker ps -qa);\
-	docker rmi -f $$(docker images -qa);\
-	docker volume rm $$(docker volume ls -q);\
-	docker network rm $$(docker network ls -q);
+list:
+	docker ps -a
+	docker images -a
 
-export:
-	cat .env | export
-# export DOMAIN_NAME=ast-jean.42.fr
-# export MYSQL_HOSTNAME=mariadb
-# export MYSQL_DATABASE=wordpress
-# export MYSQL_USER=ast-jean
-# export MYSQL_PASSWORD=1234
-# export MYSQL_ROOT_PASSWORD=1234
+delete:
+	cd srcs && docker-compose stop nginx
+	cd srcs && docker-compose stop wordpress
+	cd srcs && docker-compose stop mariadb
+	docker system prune -a
 
-copy_paste_no_work:
-	VBoxClient --clipboard
+logs:
+	cd srcs && docker-compose logs mariadb wordpress nginx
 
-.PHONY: all re down clean
+.PHONY: hosts all install build up start down remove re list images delete
 
-#Create Database
-#	CREATE DATABASE wordpress;
-#Create user
-#	CREATE USER 'ast-jean'@'localhost' IDENTIFIED BY '1234';
-#Grant priv
-#	GRANT ALL PRIVILEGES ON wordpress.* TO 'ast-jean'@'localhost';
-#FLUSH PRIVILEGES;
-#show dbs
-#	SHOW DATABASES;
-#Import .sql to maria db docker container
-#	docker cp srcs/requirements/mariadb/conf/wordpress.sql mariadb:/tmp
-#	docker exec -i mariadb -it bash
-#	mysql -u username -p database_name < /tmp/wordpress.sql
-#	rm /tmp/wordpress.sql
-#See in docker container
-#	SELECT * FROM wp_users WHERE user_login = 'ast-jean';
-#Change value from db
-#UPDATE wp_users SET user_pass = MD5('1234') WHERE user_login = 'ast-jean';
-# Kill server to test restart
-# docker exec -it wordpress kill 1
