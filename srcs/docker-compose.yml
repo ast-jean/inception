@@ -4,40 +4,30 @@ services:
   nginx:
     container_name: nginx
     build: ./requirements/nginx
-    ports:
-      - 443:443
-    volumes:
-      - wordpress_data:/var/www/html
+    ports: ['443:443']
+    volumes: ['wordpress_data:/var/www/html']
     restart: always
-    networks:
-      - network
+    networks: ['network']
 
   mariadb:
     container_name: mariadb
     build: ./requirements/mariadb
-    volumes:
-      - mariadb_data:/var/lib/mysql
-    networks:
-      - network
+    volumes: ['mariadb_data:/var/lib/mysql']
+    networks: ['network']
     restart: always
-    env_file:
-      - .env
+    env_file: ['.env']
 
   wordpress:
     container_name: wordpress
-    depends_on:
-      - mariadb
+    depends_on: ['mariadb']
     build:
       context: ./requirements/wordpress
       dockerfile: Dockerfile
     restart: always
-    env_file:
-      - .env
-    volumes:
-      - wordpress_data:/var/www/html
-      - wordpress_media:/home/
-    networks:
-      - network
+    env_file: ['.env']
+    volumes: ['wordpress_data:/var/www/html']
+    expose: ['9000']
+    networks: ['network']
 
 volumes:
   mariadb_data:
@@ -51,12 +41,6 @@ volumes:
     driver_opts:
       type: none
       device: /home/ast-jean/data/wordpress
-      o: bind
-  wordpress_media:
-    driver: local
-    driver_opts:
-      type: none
-      device: /home/ast-jean/data/media
       o: bind
 
 networks:

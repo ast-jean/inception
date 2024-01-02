@@ -26,6 +26,11 @@ COPY ./conf/www.conf /etc/php/7.3/fpm/pool.d/
 #Create the folder to enable php start
 RUN mkdir /run/php
 
+#we copy the script, give the right to launch it in local on our computer
+COPY ./tools/run.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/run.sh
+ENTRYPOINT ["/usr/local/bin/run.sh"]
+
 #We go the html directory
 WORKDIR /var/www/html/
 
